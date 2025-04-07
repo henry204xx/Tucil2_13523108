@@ -47,7 +47,7 @@ int QuadTreeNode::countTotalNodes() const {
 
 int QuadTreeNode::depth() const {
     if (isLeaf) return 0;
-    int maxDepth = 0;
+    int maxDepth = -1;
     for (int i = 0; i < 4; i++) {
         if (children[i]) {
             int childDepth = children[i]->depth();
@@ -66,13 +66,24 @@ void QuadTreeNode::compress(const Image& img, const int method, double threshold
         return;
     }
     
-    if (width <= minBlockSize || height <= minBlockSize) {
+    // Stop if current block area is too small
+    if (width * height <= minBlockSize) {
         calculateAverageColor(img);
         isLeaf = true;
         return;
     }
 
-    if (width / 2 < minBlockSize || height / 2 < minBlockSize) {
+    // Calculate sub-block areas
+    int subWidth1 = width / 2;
+    int subWidth2 = width - subWidth1;
+    int subHeight1 = height / 2;
+    int subHeight2 = height - subHeight1;
+
+    // Stop if ANY sub-block would be too small
+    if (subWidth1 * subHeight1 < minBlockSize || 
+        subWidth1 * subHeight2 < minBlockSize || 
+        subWidth2 * subHeight1 < minBlockSize || 
+        subWidth2 * subHeight2 < minBlockSize) {
         calculateAverageColor(img);
         isLeaf = true;
         return;
@@ -314,13 +325,24 @@ double QuadTreeNode::calculateSSIM(const Image& img1, const Image& img2, int x1,
 
 
 void QuadTreeNode::compressWithSSIM(const Image& img, double threshold, int minBlockSize) {
-    if (width <= minBlockSize || height <= minBlockSize) {
+    // Stop if current block area is too small
+    if (width * height <= minBlockSize) {
         calculateAverageColor(img);
         isLeaf = true;
         return;
     }
 
-    if (width / 2 < minBlockSize || height / 2 < minBlockSize) {
+    // Calculate sub-block areas
+    int subWidth1 = width / 2;
+    int subWidth2 = width - subWidth1;
+    int subHeight1 = height / 2;
+    int subHeight2 = height - subHeight1;
+
+    // Stop if ANY sub-block would be too small
+    if (subWidth1 * subHeight1 < minBlockSize || 
+        subWidth1 * subHeight2 < minBlockSize || 
+        subWidth2 * subHeight1 < minBlockSize || 
+        subWidth2 * subHeight2 < minBlockSize) {
         calculateAverageColor(img);
         isLeaf = true;
         return;
