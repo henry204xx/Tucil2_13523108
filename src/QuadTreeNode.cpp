@@ -72,6 +72,12 @@ void QuadTreeNode::compress(const Image& img, const int method, double threshold
         return;
     }
 
+    if (width / 2 < minBlockSize || height / 2 < minBlockSize) {
+        calculateAverageColor(img);
+        isLeaf = true;
+        return;
+    }
+
     double error = 0.0;
     if (method == 1) {
         error = calculateVariance(img);
@@ -314,6 +320,12 @@ void QuadTreeNode::compressWithSSIM(const Image& img, double threshold, int minB
         return;
     }
 
+    if (width / 2 < minBlockSize || height / 2 < minBlockSize) {
+        calculateAverageColor(img);
+        isLeaf = true;
+        return;
+    }
+    
     // Calculate the average color for the current node's region
     calculateAverageColor(img);
 
