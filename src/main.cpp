@@ -121,10 +121,10 @@ int main() {
         Image img(filename);
 
         // Create and compress the image using QuadTree
-        QuadTree quadTree(img, method, 0, 1, targetOn); // Declare quadTree outside the blocks
+        QuadTree quadTree(img, method, 0, 1, targetOn); 
         if (targetOn) { // if target compression is on
             QuadTree quadTreeTemp(img, method, 0, 1, targetOn);
-            double bestThreshold = quadTreeTemp.getBestThreshold(filename, method, 1-targetCompression); // Example target ratio of 0.5
+            double bestThreshold = quadTreeTemp.getBestThreshold(filename, method, 1-targetCompression); 
             quadTree = QuadTree(img, method, bestThreshold, 1, targetOn);
         }
         else {
