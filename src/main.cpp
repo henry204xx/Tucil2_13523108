@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <fstream>
 #include "Image.hpp"
 #include "QuadTree.hpp"
 
@@ -22,6 +23,14 @@ int main() {
 
         cout << "Enter the absolute path of the image: ";
         cin >> filename;
+
+        // Check if the file exists
+        ifstream fileCheck(filename);
+        if (!fileCheck) {
+            cerr << "Error: File not found. Please check the path and try again.\n";
+            return 1;
+        }
+        fileCheck.close();
 
         do {
             cout << "Select the error calculation method:" << endl;
