@@ -9,10 +9,11 @@ using namespace chrono;
 
 int main() {
 
-    cout << endl;
-    cout << "============================" << endl;
-    cout << "QuadTree Image Compression" << endl;
-    cout << "============================\n" << endl;
+    cout << "\n"
+    << "=========================================\n"
+    << "       QuadTree Image Compression      \n"
+    << "=========================================\n"
+    << endl;
     try {
         string filename;
         double threshold;
@@ -41,8 +42,27 @@ int main() {
             }
         } while (true);
 
-        bool validThreshold = false;
+        double targetCompression;
+        bool targetOn;
+
         do {
+            cout << "Enter the target compression ratio (0 for no target): ";
+            cin >> targetCompression;
+
+            if (cin.fail() || targetCompression < 0 || targetCompression > 1) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a value between 0 and 1.\n";
+            } else {
+            break;
+            }
+        } while (true);
+
+        targetOn = (targetCompression != 0);
+
+        if (!targetOn) {
+            bool validThreshold = false;
+            do {
             cout << "Enter the compression threshold: ";
             cin >> threshold;
 
@@ -55,56 +75,85 @@ int main() {
 
             switch (method) {
                 case 1: // Variance
+                if (threshold >= 0 && threshold <= 16256.25) validThreshold = true;
+                else cout << "Threshold must be between 0 and 16256.25.\n";
                 case 2: // MAD
-                
-                    if (threshold >= 0) validThreshold = true;
-                    else cout << "Threshold must be >= 0.\n";
-                    break;
+                if (threshold >= 0 && threshold <= 127.5) validThreshold = true;
+                else cout << "Threshold must be between 0 and 127.5.\n";
+                break;
 
                 case 3: // Max Difference
-                    if (threshold >= 0 && threshold <= 255) validThreshold = true;
-                    else cout << "Max Difference threshold must be between 0 and 255.\n";
-                    break;
+                if (threshold >= 0 && threshold <= 255) validThreshold = true;
+                else cout << "Max Difference threshold must be between 0 and 255.\n";
+                break;
                 case 4: // Entropy
-                    if (threshold >= 0 && threshold <= 8) validThreshold = true;
-                    else cout << "Entropy threshold must be between 0 and 8.\n";
-                    break;
+                if (threshold >= 0 && threshold <= 8) validThreshold = true;
+                else cout << "Entropy threshold must be between 0 and 8.\n";
+                break;
 
                 case 5: // SSIM
-                    if (threshold >= 0 && threshold <= 1) validThreshold = true;
-                    else cout << "SSIM threshold must be between 0 and 1.\n";
-                    break;
+                if (threshold >= 0 && threshold <= 1) validThreshold = true;
+                else cout << "SSIM threshold must be between 0 and 1.\n";
+                break;
             }
 
-        } while (!validThreshold);
+            } while (!validThreshold);
 
-        do {
+            do {
             cout << "Enter the minimum block size: ";
             cin >> minBlockSize;
 
             if (cin.fail() || minBlockSize < 1) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input. Please enter block size larger or equal to 1.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter block size larger or equal to 1.\n";
             } else {
-            break;
+                break;
             }
-        } while (true);
-        cout << endl;
+            } while (true);
+            cout << endl;
+        }
 
-        // Start measuring execution time
+        // Start
         auto start = high_resolution_clock::now();
 
         // Load the image
         Image img(filename);
 
         // Create and compress the image using QuadTree
-        QuadTree quadTree(img, method, threshold, minBlockSize);
+        QuadTree quadTree(img, method, 0, 1, targetOn); // Declare quadTree outside the blocks
+        if (targetOn) { // if target compression is on
+            QuadTree quadTreeTemp(img, method, 0, 1, targetOn);
+            double bestThreshold = quadTreeTemp.getBestThreshold(filename, method, 1-targetCompression); // Example target ratio of 0.5
+            quadTree = QuadTree(img, method, bestThreshold, 1, targetOn);
+        }
+        else {
+            quadTree = QuadTree(img, method, threshold, minBlockSize, targetOn);
+            quadTree.compressImage(img); 
+        }
 
+        // Stop
+        auto end = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(end - start);
+       
         // Save the compressed image
-        string outputFilename = "test/compressed_" + filename.substr(filename.find_last_of("/\\") + 1);
+        string outputFilename;
+        bool validPath = false;
+
+        do {
+            cout << "Enter the absolute path to save the compressed image: ";
+            cin >> outputFilename;
+
+            // Validate the path
+            if (outputFilename.empty()) {
+            cout << "Invalid path. Please enter a valid absolute path.\n";
+            } else {
+            validPath = true;
+            }
+        } while (!validPath);
+
         if (quadTree.saveImage(outputFilename)) {
-            cout << "Compressed image saved as: " << outputFilename << endl;
+            cout << "Compressed image saved in: " << outputFilename << endl;
         } else {
             cerr << "Failed to save the compressed image." << endl;
         }
@@ -115,9 +164,6 @@ int main() {
         cout << "Total nodes: " << quadTree.getRoot()->countTotalNodes() << endl;
         cout << "Depth of the QuadTree: " << quadTree.getRoot()->depth() << endl;
 
-        // Stop measuring execution time
-        auto end = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(end - start);
         cout << "Execution time: " << duration.count() << " ms" << endl;
 
     } catch (const exception& e) {

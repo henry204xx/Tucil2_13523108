@@ -4,6 +4,7 @@
 #include <numeric>
 #include <cstring>
 #include <limits>
+#include <iostream>
 
 QuadTreeNode::QuadTreeNode(int x, int y, int width, int height) 
     : x(x), y(y), width(width), height(height), isLeaf(false), avgColor{0, 0, 0}, children{nullptr, nullptr, nullptr, nullptr} {
@@ -59,35 +60,54 @@ int QuadTreeNode::depth() const {
     return maxDepth + 1;
 }
 
-void QuadTreeNode::compress(const Image& img, const int method, double threshold, int minBlockSize) {
+void QuadTreeNode::compress(const Image& img, const int method, double threshold, int minBlockSize, bool targetOn) {
 
     if (method == 5) {
-        compressWithSSIM(img, threshold, minBlockSize);
+        compressWithSSIM(img, threshold, minBlockSize, targetOn);
         return;
     }
     
-    // Stop if current block area is too small
-    if (width * height <= minBlockSize) {
-        calculateAverageColor(img);
-        isLeaf = true;
-        return;
-    }
-
     // Calculate sub-block areas
     int subWidth1 = width / 2;
     int subWidth2 = width - subWidth1;
     int subHeight1 = height / 2;
     int subHeight2 = height - subHeight1;
 
-    // Stop if ANY sub-block would be too small
-    if (subWidth1 * subHeight1 < minBlockSize || 
-        subWidth1 * subHeight2 < minBlockSize || 
-        subWidth2 * subHeight1 < minBlockSize || 
-        subWidth2 * subHeight2 < minBlockSize) {
+    if (!targetOn) {
+        // Stop if current block area is too small
+        if (width * height <= minBlockSize) {
+            calculateAverageColor(img);
+            isLeaf = true;
+            return;
+        }
+
+        // Stop if ANY sub-block would be too small
+        if (subWidth1 * subHeight1 < minBlockSize || 
+            subWidth1 * subHeight2 < minBlockSize || 
+            subWidth2 * subHeight1 < minBlockSize || 
+            subWidth2 * subHeight2 < minBlockSize) {
+            calculateAverageColor(img);
+            isLeaf = true;
+            return;
+        }
+    }
+
+    if (width * height <= 1) {
         calculateAverageColor(img);
         isLeaf = true;
         return;
     }
+
+    // Stop if ANY sub-block would be too small
+    if (subWidth1 * subHeight1 <= 1 || 
+        subWidth1 * subHeight2 <= 1 || 
+        subWidth2 * subHeight1 <= 1 || 
+        subWidth2 * subHeight2 <= 1) {
+        calculateAverageColor(img);
+        isLeaf = true;
+        return;
+    }
+    
 
     double error = 0.0;
     if (method == 1) {
@@ -116,7 +136,7 @@ void QuadTreeNode::compress(const Image& img, const int method, double threshold
 
         for (int i = 0; i < 4; i++) {
             if (children[i]) {
-                children[i]->compress(img, method, threshold, minBlockSize);
+                children[i]->compress(img, method, threshold, minBlockSize, targetOn);
             }
         }
     }
@@ -324,13 +344,7 @@ double QuadTreeNode::calculateSSIM(const Image& img1, const Image& img2, int x1,
 
 
 
-void QuadTreeNode::compressWithSSIM(const Image& img, double threshold, int minBlockSize) {
-    // Stop if current block area is too small
-    if (width * height <= minBlockSize) {
-        calculateAverageColor(img);
-        isLeaf = true;
-        return;
-    }
+void QuadTreeNode::compressWithSSIM(const Image& img, double threshold, int minBlockSize, bool targetOn) {
 
     // Calculate sub-block areas
     int subWidth1 = width / 2;
@@ -338,15 +352,41 @@ void QuadTreeNode::compressWithSSIM(const Image& img, double threshold, int minB
     int subHeight1 = height / 2;
     int subHeight2 = height - subHeight1;
 
-    // Stop if ANY sub-block would be too small
-    if (subWidth1 * subHeight1 < minBlockSize || 
-        subWidth1 * subHeight2 < minBlockSize || 
-        subWidth2 * subHeight1 < minBlockSize || 
-        subWidth2 * subHeight2 < minBlockSize) {
+    if (!targetOn) {
+        // Stop if current block area is too small
+        if (width * height <= minBlockSize) {
+            calculateAverageColor(img);
+            isLeaf = true;
+            return;
+        }
+
+        // Stop if ANY sub-block would be too small
+        if (subWidth1 * subHeight1 < minBlockSize || 
+            subWidth1 * subHeight2 < minBlockSize || 
+            subWidth2 * subHeight1 < minBlockSize || 
+            subWidth2 * subHeight2 < minBlockSize) {
+            calculateAverageColor(img);
+            isLeaf = true;
+            return;
+        }
+    }
+
+    if (width * height <= 1) {
         calculateAverageColor(img);
         isLeaf = true;
         return;
     }
+
+    // Stop if ANY sub-block would be too small
+    if (subWidth1 * subHeight1 <= 1 || 
+        subWidth1 * subHeight2 <= 1 || 
+        subWidth2 * subHeight1 <= 1 || 
+        subWidth2 * subHeight2 <= 1) {
+        calculateAverageColor(img);
+        isLeaf = true;
+        return;
+    }
+    
     
     // Calculate the average color for the current node's region
     calculateAverageColor(img);
@@ -367,7 +407,7 @@ void QuadTreeNode::compressWithSSIM(const Image& img, double threshold, int minB
     if (ssim >= threshold) {
         isLeaf = true;
     } else {
-        // Split into children and compress them
+        // Split into 4 children and compress them
         int halfWidth = width / 2;
         int halfHeight = height / 2;
         int remainingWidth = width - halfWidth;
@@ -380,7 +420,7 @@ void QuadTreeNode::compressWithSSIM(const Image& img, double threshold, int minB
 
         for (int i = 0; i < 4; i++) {
             if (children[i]) {
-                children[i]->compressWithSSIM(img, threshold, minBlockSize);
+                children[i]->compressWithSSIM(img, threshold, minBlockSize, targetOn);
             }
         }
     }
@@ -408,7 +448,7 @@ void QuadTreeNode::calculateAverageColor(const Image& img) {
     }
 }
 
-void QuadTreeNode::fillImage(Image& img) const {
+void QuadTreeNode::fillImage(Image& img) const { // Fill the image with the average color of this node
     if (isLeaf) {
         int imgWidth = img.getWidth();
         int imgHeight = img.getHeight();

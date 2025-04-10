@@ -46,7 +46,7 @@ bool Image::save(const string& filename) const {
     } else if (ext == "bmp") {
         success = stbi_write_bmp(filename.c_str(), width, height, 3, pixels.data());
     } else {
-        throw runtime_error("Unsupported output format");
+        throw runtime_error("Cannot save image. Please check your path and extension.");
     }
     
     return success != 0;
