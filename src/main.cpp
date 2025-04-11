@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include "Image.hpp"
 #include "QuadTree.hpp"
@@ -40,14 +41,21 @@ int main() {
             cout << "4. Entropy" << endl;
             cout << "5. SSIM (Structural Similarity Index)" << endl;
             cout << "Enter your choice (1-5): ";
-            cin >> method;
+            
+            double tempMethod;
+            cin >> tempMethod;
 
-            if (cin.fail() || method < 1 || method > 5) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input. Please enter a number between 1 and 5.\n";
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter a number.\n";
+            } else if (tempMethod < 1 || tempMethod > 5) {
+                cout << "Invalid input. Please enter a number between 1 and 5.\n";
+            } else if (tempMethod != floor(tempMethod)) {
+                cout << "Invalid input. Please enter an integer.\n";
             } else {
-            break;
+                method = static_cast<int>(tempMethod);
+                break;
             }
         } while (true);
 
@@ -109,19 +117,26 @@ int main() {
             } while (!validThreshold);
 
             do {
-            cout << "Enter the minimum block size: ";
-            cin >> minBlockSize;
+                cout << "Enter the minimum block size (integer): ";
+                double tempBlockSize;
+                cin >> tempBlockSize;
 
-            if (cin.fail() || minBlockSize < 1) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "Invalid input. Please enter block size larger or equal to 1.\n";
-            } else {
-                break;
-            }
+                if (cin.fail()) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input. Please enter a number.\n";
+                } else if (tempBlockSize < 1) {
+                    cout << "Block size must be at least 1.\n";
+                } else if (tempBlockSize != floor(tempBlockSize)) {
+                    cout << "Block size must be an integer.\n";
+                } else {
+                    minBlockSize = static_cast<int>(tempBlockSize);
+                    break;
+                }
             } while (true);
             cout << endl;
         }
+
 
         // Start
         auto start = high_resolution_clock::now();

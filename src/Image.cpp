@@ -36,20 +36,25 @@ Image::~Image() {
 }
 
 bool Image::save(const string& filename) const {
-    string ext = filename.substr(filename.find_last_of(".") + 1);
-    int success = 0;
-    
-    if (ext == "png") {
-        success = stbi_write_png(filename.c_str(), width, height, 3, pixels.data(), width * 3);
-    } else if (ext == "jpg" || ext == "jpeg") {
-        success = stbi_write_jpg(filename.c_str(), width, height, 3, pixels.data(), 90);
-    } else if (ext == "bmp") {
-        success = stbi_write_bmp(filename.c_str(), width, height, 3, pixels.data());
-    } else {
-        throw runtime_error("Cannot save image. Please check your path and extension.");
+    try {
+        string ext = filename.substr(filename.find_last_of(".") + 1);
+        int success = 0;
+        
+        if (ext == "png") {
+            success = stbi_write_png(filename.c_str(), width, height, 3, pixels.data(), width * 3);
+        } else if (ext == "jpg" || ext == "jpeg") {
+            success = stbi_write_jpg(filename.c_str(), width, height, 3, pixels.data(), 90);
+        } else if (ext == "bmp") {
+            success = stbi_write_bmp(filename.c_str(), width, height, 3, pixels.data());
+        } else {
+            throw runtime_error("Please check your path and extension.");
+        }
+        
+        return success != 0;
+    } catch (const exception& e) {
+        cerr << "Error saving image: " << e.what() << endl;
+        return false;
     }
-    
-    return success != 0;
 }
 
 int Image::getPixel(int x, int y, int channel) const {
@@ -63,8 +68,6 @@ void Image::setPixel(int x, int y, int channel, int value) {
     if (x < 0 || x >= width || y < 0 || y >= height || channel < 0 || channel > 2) {
         throw out_of_range("Pixel coordinates or channel out of range");
     }
-    if (value < 0 || value > 255) {
-        throw invalid_argument("Pixel value must be between 0 and 255");
-    }
+    value = max(0, min(255, value));  // limit it to 0-255 range
     pixels[(y * width + x) * 3 + channel] = static_cast<unsigned char>(value);
 }
